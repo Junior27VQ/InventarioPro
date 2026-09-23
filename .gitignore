@@ -1,0 +1,50 @@
+# --- DEPENDENCIAS ---
+node_modules/
+.pnp
+.pnp.js
+
+# --- BUILD Y PRODUCCIÓN ---
+dist/
+build/
+web-build/
+*.tsbuildinfo
+
+# --- EXPO & METRO ---
+.expo/
+expo-env.d.ts
+.metro-health-check*
+
+# --- NATIVE / MOBILE (iOS & Android generados) ---
+/ios
+/android
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# --- VARIABLES DE ENTORNO Y CREDENCIALES ---
+.env
+.env.*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# --- LOGS Y DEPURACIÓN ---
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+pnpm-debug.*
+*.log
+*.sqlite
+*.sqlite-journal
+
+# --- SISTEMA OPERATIVO Y EDITORES ---
+.DS_Store
+Thumbs.db
+*.pem
+.vscode/
+.idea/
