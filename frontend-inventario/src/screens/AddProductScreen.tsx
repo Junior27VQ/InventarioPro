@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Image, Alert, StyleSheet, ScrollView } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, TextInput, TouchableOpacity, Image, Alert, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useProduct } from '../context/ProductContext';
@@ -11,28 +12,43 @@ export default function AddProductScreen({ route, navigation }: any) {
   const productoId = route.params?.id;
   const isEditing = !!productoId;
 
-  // Si estamos editando, buscamos el producto en la lista existente usando el ID
   const productoAEditar = isEditing ? products.find((p) => p.id === productoId) : null;
 
   const [nombre, setNombre] = useState('');
   const [precio, setPrecio] = useState('');
   const [categoria, setCategoria] = useState('');
   const [fotoBase64, setFotoBase64] = useState<string | undefined>();
+  const [loading, setLoading] = useState(false); // Estado para evitar doble toque y mostrar carga
 
-  // Si encontramos el producto, rellenamos los campos; si no, se limpian para un registro nuevo
+  const limpiarFormulario = () => {
+    setNombre('');
+    setPrecio('');
+    setCategoria('');
+    setFotoBase64(undefined);
+    navigation.setParams({ id: undefined });
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!route.params?.id) {
+        limpiarFormulario();
+      }
+    }, [route.params?.id])
+  );
+
   useEffect(() => {
     if (isEditing && productoAEditar) {
       setNombre(productoAEditar.nombre || '');
       setPrecio(productoAEditar.precio ? productoAEditar.precio.toString() : '');
       setCategoria(productoAEditar.categoria || '');
       setFotoBase64(productoAEditar.fotoBase64 || undefined);
-    } else {
+    } else if (!isEditing) {
       setNombre('');
       setPrecio('');
       setCategoria('');
       setFotoBase64(undefined);
     }
-  }, [productoId, productoAEditar]);
+  }, [productoId, productoAEditar, isEditing]);
 
   const tomarFoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -50,11 +66,10 @@ export default function AddProductScreen({ route, navigation }: any) {
     }
   };
 
+  const esFormularioValido = nombre.trim() !== '' && precio.trim() !== '';
+
   const guardar = async () => {
-    if (!nombre || !precio || !categoria) {
-      Alert.alert('Campos incompletos', 'Por favor llena todos los campos obligatorios.');
-      return;
-    }
+    if (loading || !esFormularioValido) return;
 
     const precioNum = parseFloat(precio);
     if (isNaN(precioNum)) {
@@ -62,29 +77,37 @@ export default function AddProductScreen({ route, navigation }: any) {
       return;
     }
 
-    let exito = false;
+    try {
+      setLoading(true); // Activamos el indicador de carga para bloquear el botón
+      let exito = false;
 
-    if (isEditing && productoAEditar) {
-      // Actualizar producto existente utilizando su ID
-      exito = await updateProduct(productoAEditar.id || (productoAEditar as any)._id, {
-        nombre,
-        precio: precioNum,
-        categoria,
-        fotoBase64: fotoBase64 || '',
-      });
-    } else {
-      // Crear nuevo producto
-      exito = await addProduct({
-        nombre,
-        precio: precioNum,
-        categoria,
-        fotoBase64: fotoBase64 || '',
-      });
-    }
+      if (isEditing && productoAEditar) {
+        exito = await updateProduct(productoAEditar.id || (productoAEditar as any)._id, {
+          nombre,
+          precio: precioNum,
+          categoria,
+          fotoBase64: fotoBase64 || '',
+        });
+      } else {
+        exito = await addProduct({
+          nombre,
+          precio: precioNum,
+          categoria,
+          fotoBase64: fotoBase64 || '',
+        });
+      }
 
-    if (exito) {
-      Alert.alert('Éxito', isEditing ? 'Producto actualizado correctamente' : 'Producto registrado correctamente');
-      navigation.goBack();
+      if (exito) {
+        Alert.alert('Éxito', isEditing ? 'Producto actualizado correctamente' : 'Producto registrado correctamente');
+        limpiarFormulario();
+        if (navigation.canGoBack()) {
+          navigation.goBack(); // Regresa a la pestaña principal de forma segura
+        }
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Ocurrió un error al guardar el producto.');
+    } finally {
+      setLoading(false); // Desactivamos la carga pase lo que pase
     }
   };
 
@@ -98,8 +121,9 @@ export default function AddProductScreen({ route, navigation }: any) {
           style={styles.input}
           value={nombre}
           onChangeText={setNombre}
-          placeholder="Nombre del producto"
+          placeholder="Nombre del producto (Requerido)"
           placeholderTextColor="#999"
+          editable={!loading}
         />
       </View>
 
@@ -109,9 +133,10 @@ export default function AddProductScreen({ route, navigation }: any) {
           style={styles.input}
           value={precio}
           onChangeText={setPrecio}
-          placeholder="Precio (ej. 25.50)"
+          placeholder="Precio (Requerido, ej. 25.50)"
           placeholderTextColor="#999"
           keyboardType="numeric"
+          editable={!loading}
         />
       </View>
 
@@ -123,10 +148,11 @@ export default function AddProductScreen({ route, navigation }: any) {
           onChangeText={setCategoria}
           placeholder="Categoría"
           placeholderTextColor="#999"
+          editable={!loading}
         />
       </View>
 
-      <TouchableOpacity style={styles.cameraButton} onPress={tomarFoto}>
+      <TouchableOpacity style={styles.cameraButton} onPress={tomarFoto} disabled={loading}>
         <Ionicons name="camera-outline" size={24} color="#fff" />
         <Text style={styles.cameraButtonText}>Tomar Fotografía</Text>
       </TouchableOpacity>
@@ -146,9 +172,20 @@ export default function AddProductScreen({ route, navigation }: any) {
         </View>
       )}
 
-      <TouchableOpacity style={styles.saveButton} onPress={guardar}>
-        <Ionicons name="save-outline" size={20} color="#fff" style={styles.saveIcon} />
-        <Text style={styles.saveButtonText}>{isEditing ? 'Actualizar Producto' : 'Guardar Producto'}</Text>
+      {/* Botón de guardar con control de estado 'loading' */}
+      <TouchableOpacity 
+        style={[styles.saveButton, (!esFormularioValido || loading) && styles.disabledButton]} 
+        onPress={guardar}
+        disabled={!esFormularioValido || loading}
+      >
+        {loading ? (
+          <ActivityIndicator size="small" color="#fff" />
+        ) : (
+          <>
+            <Ionicons name="save-outline" size={20} color="#fff" style={styles.saveIcon} />
+            <Text style={styles.saveButtonText}>{isEditing ? 'Actualizar Producto' : 'Guardar Producto'}</Text>
+          </>
+        )}
       </TouchableOpacity>
     </ScrollView>
   );
@@ -247,6 +284,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+  },
+  disabledButton: {
+    backgroundColor: '#b0c4de',
+    elevation: 0,
+    shadowOpacity: 0,
   },
   saveIcon: {
     marginRight: 8,
