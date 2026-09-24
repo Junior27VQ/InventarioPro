@@ -9,6 +9,7 @@ export type Product = {
   categoria: string;
   fotoBase64: string;
   createdAt?: string;
+  codigoBarras?: string;
 };
 
 type ProductContextType = {

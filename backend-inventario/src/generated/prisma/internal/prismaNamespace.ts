@@ -536,7 +536,9 @@ export const ProductoScalarFieldEnum = {
   precio: 'precio',
   categoria: 'categoria',
   fotoBase64: 'fotoBase64',
-  createdAt: 'createdAt'
+  codigoBarras: 'codigoBarras',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 } as const
 
 export type ProductoScalarFieldEnum = (typeof ProductoScalarFieldEnum)[keyof typeof ProductoScalarFieldEnum]
@@ -556,6 +558,14 @@ export const QueryMode = {
 } as const
 
 export type QueryMode = (typeof QueryMode)[keyof typeof QueryMode]
+
+
+export const NullsOrder = {
+  first: 'first',
+  last: 'last'
+} as const
+
+export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
 
 
 

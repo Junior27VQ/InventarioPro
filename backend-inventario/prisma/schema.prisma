@@ -16,7 +16,9 @@ model Producto{
   id Int @id @default(autoincrement())
   nombre String
   precio Float
-  categoria String
-  fotoBase64 String
+  categoria String?
+  fotoBase64 String?
+  codigoBarras String?
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

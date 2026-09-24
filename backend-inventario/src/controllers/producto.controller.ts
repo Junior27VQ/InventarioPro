@@ -17,7 +17,7 @@ export const obtenerProductos = async (req: Request, res: Response): Promise<voi
 // 2. POST: Crear un nuevo producto con su foto en Base64
 export const crearProducto = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { nombre, precio, categoria, fotoBase64 } = req.body;
+    const { nombre, precio, categoria, fotoBase64, codigoBarras } = req.body;
 
     // Validación básica de campos requeridos
     if (!nombre || precio === undefined || !categoria || !fotoBase64) {
@@ -31,6 +31,7 @@ export const crearProducto = async (req: Request, res: Response): Promise<void> 
         precio: Number(precio),
         categoria,
         fotoBase64,
+        codigoBarras,
       },
     });
 
